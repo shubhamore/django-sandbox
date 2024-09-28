@@ -1,0 +1,37 @@
+# Python
+*.py[cod]
+__pycache__/
+*.so
+
+# Virtual Environment
+venv/
+env/
+.venv/
+.env/
+
+# Django specific
+*.log
+# *.sqlite3
+# db.sqlite3
+# /static/
+# media/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Environment variables
+.env
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Jupyter Notebook
+.ipynb_checkpoints
