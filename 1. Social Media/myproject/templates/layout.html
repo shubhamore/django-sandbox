@@ -14,9 +14,10 @@
 </head>
 <body>
     <nav>
-        <a href="/">🏠</a>|
-        <a href="/about">👨‍💻</a>|
-        <a href="{% url "posts:list" %}">📰</a>
+        <a href="/" title="home" >🏠</a>|
+        <a href="/about" title="about" >👨‍💻</a>|
+        <a href="{% url "posts:list" %}" title="post list" >📰</a>|
+        <a href="{% url "users:register" %}" title="register" >🚀</a>
     </nav>
     <main>
         {% block content %}
