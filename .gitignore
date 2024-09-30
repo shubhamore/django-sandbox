@@ -15,6 +15,7 @@ env/
 # db.sqlite3
 # /static/
 # media/
+assets/
 
 # IDE and editor files
 .idea/
