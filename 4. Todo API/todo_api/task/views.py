@@ -3,6 +3,7 @@ from .models import Task
 from .serializers import TaskSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
+from drf_spectacular.utils import extend_schema
 
 # View to list and create tasks
 class TaskListCreateView(generics.ListCreateAPIView):
@@ -11,6 +12,16 @@ class TaskListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     search_fields = ['title']
     filterset_fields = ['completed']
+
+    @extend_schema(
+        operation_id='List or Create Tasks',
+        description='Lists tasks for the authenticated user or creates a new task.',
+        request=TaskSerializer,
+        responses={
+            200: TaskSerializer(many=True),
+            201: TaskSerializer,
+        },
+    )
 
     def get_queryset(self):
         return Task.objects.filter(user=self.request.user)  
