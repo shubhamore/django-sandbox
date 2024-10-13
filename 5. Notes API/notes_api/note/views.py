@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from .permissions import IsOwner
-from .serializers import NoteSerializer
+from .serializers import NoteSerializer, TagSerializer
 from .models import Note, Tag
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
@@ -22,23 +22,26 @@ class NoteListCreateView(ListCreateAPIView):
     def get_queryset(self):
         user = self.request.user
         queryset = Note.objects.filter(owner=user)
-
         tag_names = self.request.query_params.getlist('tags')
-
         if tag_names:
             tags = Tag.objects.filter(name__in=tag_names, owner=user)
-
             if tags.exists():
                 queryset = queryset.filter(tags__in=tags)
-
         if not queryset.exists():
             return Note.objects.none()  # Or handle as you prefer
-
         return queryset
-
-
-
-
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page, many=True)
+        notes_data = serializer.data
+        user_tags = Tag.objects.filter(owner=request.user)
+        tags_names = [tag.name for tag in user_tags]
+        response_data = self.get_paginated_response(notes_data)
+        response_data.data['tags'] = tags_names
+        return response_data
+        
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
