@@ -15,9 +15,8 @@ from rest_framework.response import Response
 class NoteListCreateView(ListCreateAPIView):
     permission_classes = [IsOwner]
     serializer_class =  NoteSerializer
-    # filter_backends = [DjangoFilterBackend]
-    # filterset_fields = []
-    filter_backends = [filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_fields = ['tags']
     search_fields = ['title','description']
 
     def get_queryset(self):
@@ -51,7 +50,6 @@ class NoteExportNotesCSV(APIView):
     
 class NoteExportNotesJSON(APIView):
     permission_classes=[IsOwner]
-    print("hellwo json")
     def get(self,request):
         notes = Note.objects.filter(owner=request.user)
         serializer = NoteSerializer(notes, many=True)
