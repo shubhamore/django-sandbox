@@ -8,6 +8,7 @@ from rest_framework import filters
 from rest_framework.views import APIView
 import csv
 from django.http import HttpResponse
+from rest_framework.response import Response
 
 # Create your views here.
 
@@ -50,6 +51,7 @@ class NoteExportNotesCSV(APIView):
     
 class NoteExportNotesJSON(APIView):
     permission_classes=[IsOwner]
+    print("hellwo json")
     def get(self,request):
         notes = Note.objects.filter(owner=request.user)
         serializer = NoteSerializer(notes, many=True)
