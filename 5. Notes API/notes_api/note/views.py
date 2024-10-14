@@ -9,7 +9,8 @@ from rest_framework.views import APIView
 import csv
 from django.http import HttpResponse
 from rest_framework.response import Response
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 
 class NoteListCreateView(ListCreateAPIView):
@@ -72,6 +73,20 @@ class NoteRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
             raise PermissionDenied("You do not have permission to delete this note.")
         instance.delete()
     
+class NoteRemoveSelfFromSharedView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, pk, *args, **kwargs):
+        user = request.user
+        try:
+            note = Note.objects.get(pk=pk)
+        except Note.DoesNotExist:
+            raise NotFound("Note not found.")
+        if user not in note.shared_with.all():
+            raise PermissionDenied("You are not a shared user for this note.")
+        note.shared_with.remove(user)
+        note.save()
+        return Response({"detail": "You have been removed from the shared list of this note."})
+
 class NoteExportNotesCSV(APIView):
     permission_classes=[IsOwner]
     def get(self,request):
