@@ -23,6 +23,8 @@ class Note(models.Model):
     last_modified = models.DateTimeField(auto_now=True)
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE,related_name='notes')
     tags = models.ManyToManyField(Tag, related_name='notes', blank=True)
+    shared_with = models.ManyToManyField(CustomUser, related_name='shared_notes', blank=True)
+    
     class Meta:
         ordering = ['-last_modified']
     
