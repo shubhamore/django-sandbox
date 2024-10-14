@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-from .permissions import IsOwner
+from .permissions import IsOwner, IsOwnerOrSharedReadOnly
 from .serializers import NoteSerializer, TagSerializer
 from .models import Note, Tag
 from django_filters.rest_framework import DjangoFilterBackend
@@ -9,7 +9,8 @@ from rest_framework.views import APIView
 import csv
 from django.http import HttpResponse
 from rest_framework.response import Response
-
+from rest_framework.exceptions import PermissionDenied, NotFound
+from rest_framework.permissions import IsAuthenticated
 # Create your views here.
 
 class NoteListCreateView(ListCreateAPIView):
@@ -21,7 +22,16 @@ class NoteListCreateView(ListCreateAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Note.objects.filter(owner=user)
+        owned = self.request.query_params.get('owned', None)
+        shared = self.request.query_params.get('shared', None)
+        if owned:
+            queryset = Note.objects.filter(owner=user)
+        elif shared:
+            queryset = Note.objects.filter(shared_with=user)
+        else:
+            queryset = Note.objects.filter(owner=user) | Note.objects.filter(shared_with=user)
+            queryset = queryset.distinct()
+
         tag_names = self.request.query_params.getlist('tags')
         if tag_names:
             tags = Tag.objects.filter(name__in=tag_names, owner=user)
@@ -46,12 +56,37 @@ class NoteListCreateView(ListCreateAPIView):
         serializer.save(owner=self.request.user)
 
 class NoteRetrieveUpdateDestroyView(RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsOwner]
+    permission_classes = [IsOwnerOrSharedReadOnly]
     serializer_class = NoteSerializer
 
     def get_queryset(self):
-        return Note.objects.filter(owner=self.request.user)
+        user = self.request.user
+        return (Note.objects.filter(owner=user) | Note.objects.filter(shared_with=user)).distinct()
     
+    def perform_update(self, serializer):
+        if self.request.user != serializer.instance.owner:
+            raise PermissionDenied("You do not have permission to edit this note.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if self.request.user != instance.owner:
+            raise PermissionDenied("You do not have permission to delete this note.")
+        instance.delete()
+    
+class NoteRemoveSelfFromSharedView(APIView):
+    permission_classes = [IsAuthenticated]
+    def post(self, request, pk, *args, **kwargs):
+        user = request.user
+        try:
+            note = Note.objects.get(pk=pk)
+        except Note.DoesNotExist:
+            raise NotFound("Note not found.")
+        if user not in note.shared_with.all():
+            raise PermissionDenied("You are not a shared user for this note.")
+        note.shared_with.remove(user)
+        note.save()
+        return Response({"detail": "You have been removed from the shared list of this note."})
+
 class NoteExportNotesCSV(APIView):
     permission_classes=[IsOwner]
     def get(self,request):
